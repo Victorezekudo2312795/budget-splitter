@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Split — Income Allocator</title>
+<style>
+  :root{
+    --bg:#141310;
+    --panel:#1c1a15;
+    --panel-2:#232019;
+    --line:#38352c;
+    --paper:#f1ead9;
+    --gold:#c99a3f;
+    --teal:#4f7d74;
+    --rust:#b3563a;
+    --muted:#8c8574;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--paper);
+    font-family:'Iowan Old Style','Georgia',serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:48px 20px 80px;
+  }
+  .wrap{width:100%;max-width:560px;}
+
+  .aperture{
+    width:56px;height:56px;margin-bottom:18px;
+    opacity:.9;
+  }
+
+  h1{
+    font-size:2rem;
+    font-weight:400;
+    letter-spacing:.2px;
+    margin:0 0 6px;
+    line-height:1.15;
+  }
+  .sub{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    color:var(--muted);
+    font-size:.92rem;
+    margin:0 0 36px;
+    line-height:1.5;
+  }
+
+  .amount-row{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:14px;
+    margin-bottom:8px;
+  }
+  .naira{font-size:1.6rem;color:var(--muted);}
+  input#amount{
+    flex:1;
+    background:transparent;
+    border:none;
+    outline:none;
+    color:var(--paper);
+    font-family:inherit;
+    font-size:2.4rem;
+    font-variant-numeric:tabular-nums;
+  }
+  input#amount::placeholder{color:#4a4636;}
+
+  .hint{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.78rem;
+    color:var(--muted);
+    margin-bottom:38px;
+  }
+
+  .categories{
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .cat{
+    background:var(--panel);
+    padding:16px 18px;
+    display:grid;
+    grid-template-columns:1fr auto auto;
+    align-items:center;
+    gap:14px;
+  }
+  .cat-name{
+    font-size:1.02rem;
+  }
+  .cat-name small{
+    display:block;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    color:var(--muted);
+    font-size:.72rem;
+    margin-top:2px;
+  }
+  .cat-pct{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.85rem;
+    color:var(--muted);
+    width:44px;
+  }
+  .cat-pct input{
+    width:44px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:inherit;
+    font-size:.85rem;
+    padding:4px 2px;
+    text-align:center;
+    border-radius:2px;
+  }
+  .cat-value{
+    font-variant-numeric:tabular-nums;
+    font-size:1.15rem;
+    text-align:right;
+    min-width:110px;
+  }
+  .cat[data-key="savings"]{border-left:3px solid var(--gold);}
+  .cat[data-key="invest"]{border-left:3px solid var(--teal);}
+  .cat[data-key="wants"]{border-left:3px solid var(--rust);}
+  .cat[data-key="business"]{border-left:3px solid var(--muted);}
+
+  .pct-total{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.78rem;
+    color:var(--muted);
+    text-align:right;
+    margin-bottom:36px;
+  }
+  .pct-total.bad{color:var(--rust);}
+
+  .goal{
+    border-top:1px solid var(--line);
+    padding-top:26px;
+  }
+  .goal-title{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.78rem;
+    letter-spacing:.3px;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .goal-row{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;}
+  .goal-row .naira{font-size:1.1rem;}
+  input#goal{
+    flex:1;
+    background:transparent;
+    border:none;
+    border-bottom:1px solid var(--line);
+    outline:none;
+    color:var(--paper);
+    font-family:inherit;
+    font-size:1.2rem;
+    padding-bottom:4px;
+  }
+  #goal-result{
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.9rem;
+    color:var(--paper);
+    line-height:1.6;
+  }
+  #goal-result strong{color:var(--gold);font-weight:600;}
+
+  footer{
+    margin-top:56px;
+    font-family:'Helvetica Neue',Arial,sans-serif;
+    font-size:.72rem;
+    color:#4a4636;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <svg class="aperture" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="46" fill="none" stroke="#38352c" stroke-width="1"/>
+    <g fill="#c99a3f" opacity="0.9">
+      <path d="M50 50 L50 10 L68 16 Z"/>
+      <path d="M50 50 L82 26 L88 44 Z"/>
+      <path d="M50 50 L90 56 L78 74 Z"/>
+      <path d="M50 50 L60 88 L38 88 Z"/>
+      <path d="M50 50 L14 78 L8 58 Z"/>
+      <path d="M50 50 L10 40 L26 18 Z"/>
+    </g>
+    <circle cx="50" cy="50" r="14" fill="#141310"/>
+  </svg>
+
+  <h1>Split</h1>
+  <p class="sub">Enter what came in. This divides it the way you decided it should go.</p>
+
+  <div class="amount-row">
+    <span class="naira">₦</span>
+    <input type="number" id="amount" placeholder="0" inputmode="decimal">
+  </div>
+  <p class="hint">Total income for this round</p>
+
+  <div class="categories">
+    <div class="cat" data-key="savings">
+      <div class="cat-name">Savings<small>Emergency fund, safety net</small></div>
+      <div class="cat-pct"><input type="number" value="40" min="0" max="100"></div>
+      <div class="cat-value" id="val-savings">₦0</div>
+    </div>
+    <div class="cat" data-key="invest">
+      <div class="cat-name">Investments<small>Growth over time</small></div>
+      <div class="cat-pct"><input type="number" value="25" min="0" max="100"></div>
+      <div class="cat-value" id="val-invest">₦0</div>
+    </div>
+    <div class="cat" data-key="wants">
+      <div class="cat-name">Wants<small>Enjoyment, no guilt</small></div>
+      <div class="cat-pct"><input type="number" value="20" min="0" max="100"></div>
+      <div class="cat-value" id="val-wants">₦0</div>
+    </div>
+    <div class="cat" data-key="business">
+      <div class="cat-name">Business / Growth<small>Tools, skills, the studio</small></div>
+      <div class="cat-pct"><input type="number" value="15" min="0" max="100"></div>
+      <div class="cat-value" id="val-business">₦0</div>
+    </div>
+  </div>
+  <p class="pct-total" id="pct-total">100% allocated</p>
+
+  <div class="goal">
+    <p class="goal-title">SAVINGS GOAL TRACKER</p>
+    <div class="goal-row">
+      <span class="naira">₦</span>
+      <input type="number" id="goal" value="1000000" inputmode="decimal">
+    </div>
+    <p id="goal-result"></p>
+  </div>
+
+  <footer>Runs entirely in your browser. Nothing is saved or sent anywhere.</footer>
+</div>
+
+<script>
+const amountEl = document.getElementById('amount');
+const goalEl = document.getElementById('goal');
+const pctInputs = document.querySelectorAll('.cat-pct input');
+const pctTotalEl = document.getElementById('pct-total');
+const goalResultEl = document.getElementById('goal-result');
+
+function fmt(n){
+  return '₦' + Math.round(n).toLocaleString('en-NG');
+}
+
+function recalc(){
+  const amount = parseFloat(amountEl.value) || 0;
+  let pctSum = 0;
+  let savingsPct = 0;
+
+  document.querySelectorAll('.cat').forEach(cat => {
+    const key = cat.dataset.key;
+    const pct = parseFloat(cat.querySelector('input').value) || 0;
+    pctSum += pct;
+    if (key === 'savings') savingsPct = pct;
+    const value = amount * (pct / 100);
+    document.getElementById('val-' + key).textContent = fmt(value);
+  });
+
+  pctTotalEl.textContent = pctSum + '% allocated';
+  pctTotalEl.classList.toggle('bad', pctSum !== 100);
+
+  const goal = parseFloat(goalEl.value) || 0;
+  const monthlySavings = amount * (savingsPct / 100);
+  if (goal > 0 && monthlySavings > 0 && amount > 0) {
+    const months = Math.ceil(goal / monthlySavings);
+    const years = (months / 12).toFixed(1);
+    goalResultEl.innerHTML = `At <strong>${fmt(monthlySavings)}</strong> a month from Savings, this goal takes <strong>${months} months</strong> (~${years} years).`;
+  } else {
+    goalResultEl.innerHTML = 'Enter an income amount to see a timeline.';
+  }
+}
+
+amountEl.addEventListener('input', recalc);
+goalEl.addEventListener('input', recalc);
+pctInputs.forEach(el => el.addEventListener('input', recalc));
+
+recalc();
+</script>
+</body>
+</html>
